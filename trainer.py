@@ -9,7 +9,10 @@ from __future__ import print_function
 import argparse
 import sys
 
-from tensorflow.examples.tutorials.mnist import input_data
+# from tensorflow.examples.tutorials.mnist import input_data
+
+from models import 
+from data import MNIST
 
 import tensorflow as tf
 
@@ -21,11 +24,12 @@ def main(_):
   mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
 
   # Create the model
-  x = tf.placeholder(tf.float32, [None, 784]) # 784 is the size of the vector dimension, None dictates the dimension can be of any length 
+  x = tf.placeholder(tf.float32, [None, 784]) 
+  # 784 is the size of the vector dimension, None dictates the dimension can be of any length 
   # different weights
   W = tf.Variable(tf.zeros([784, 10])) # need 10 
   b = tf.Variable(tf.zeros([10])) # needs to be 10 because 10 digits
-  y = tf.matmul(x, W) + b # the equation from above
+  y = tf.matmul(x, W) + b # the equation from above the bias
 
   # Define loss and optimizer
   y_ = tf.placeholder(tf.float32, [None, 10])
@@ -46,9 +50,12 @@ def main(_):
   sess = tf.InteractiveSession()
   tf.global_variables_initializer().run()
   # Train 1000 times! The more times the better accuracy
-  for _ in range(1000):
-    batch_xs, batch_ys = mnist.train.next_batch(100)
-    sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
+
+  # Training going to be dealt with in MNIST.py
+
+  # for _ in range(1000):
+  #   batch_xs, batch_ys = mnist.train.next_batch(100)
+  #   sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
 
   # Test trained model
   correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
