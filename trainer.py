@@ -6,66 +6,44 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import argparse
-import sys
+# remember to activate tensorflow like 
+# source ~/tensorflow/bin/activate
 
-# from tensorflow.examples.tutorials.mnist import input_data
+import tensorflow as tf 
+import importlib
 
-from models import 
-from data import MNIST
+# flag arguments to change batch size and such
+# to test out different things
 
-import tensorflow as tf
+FLAGS = tf.app.flags.FLAGS
+tf.app.flags.DEFINE_integer('batch_size', 100, 'Batch size divides evenly into dataset sizes.')
+tf.app.flags.DEFINE_integer('num_iter', 1000, 'Number of iterations')
+tf.app.flags.DEFINE_integer('n_print', 100, 'Print accuracy at every n_print iteration')
+tf.app.flags.DEFINE_string('datafile', 'MNIST', 'Data processing file')
+tf.app.flags.DEFINE_string('modelfile', 'softmax_MNIST', 'Data processing file')
 
-FLAGS = None
+# load model
 
+model_module = importlib.import_module(('models.' + FLAGS.modelfile))
+model = model_module.model()
+data_module = importlib.import_module(('data.' + FLAGS.datafile))
+data = data_module.dataset()
 
-def main(_):
-  # Import data
-  mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
+# same for loop as the initial tutorial code but with the flag batch sizes
 
-  # Create the model
-  x = tf.placeholder(tf.float32, [None, 784]) 
-  # 784 is the size of the vector dimension, None dictates the dimension can be of any length 
-  # different weights
-  W = tf.Variable(tf.zeros([784, 10])) # need 10 
-  b = tf.Variable(tf.zeros([10])) # needs to be 10 because 10 digits
-  y = tf.matmul(x, W) + b # the equation from above the bias
+def train():
+    for i in range(FLAGS.num_iter):
+        # load training batch
+        batch = data.train_next_batch(FLAGS.batch_size)
+        # take training step with input target arg
+        model.train_step(batch[0], batch[1])
+        # print accuracy 
+        if i % FLAGS.n_print == 0:
+            print("Iteration", i, model.calculate_acc(data.test_x(), data.test_y()))
+    print(model.calculate_acc(data.test_x(), data.test_y())) # last one is this one
 
-  # Define loss and optimizer
-  y_ = tf.placeholder(tf.float32, [None, 10])
-
-  # The raw formulation of cross-entropy,
-  #
-  #   tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(tf.nn.softmax(y)),
-  #                                 reduction_indices=[1]))
-  #
-  # can be numerically unstable.
-  #
-  # So here we use tf.nn.softmax_cross_entropy_with_logits on the raw
-  # outputs of 'y', and then average across the batch.
-  cross_entropy = tf.reduce_mean(
-      tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y))
-  train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
-
-  sess = tf.InteractiveSession()
-  tf.global_variables_initializer().run()
-  # Train 1000 times! The more times the better accuracy
-
-  # Training going to be dealt with in MNIST.py
-
-  # for _ in range(1000):
-  #   batch_xs, batch_ys = mnist.train.next_batch(100)
-  #   sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
-
-  # Test trained model
-  correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
-  accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-  print(sess.run(accuracy, feed_dict={x: mnist.test.images,
-                                      y_: mnist.test.labels}))
+def main(argv):
+    train()
 
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser()
-  parser.add_argument('--data_dir', type=str, default='/tmp/tensorflow/mnist/input_data',
-                      help='Directory for storing input data')
-  FLAGS, unparsed = parser.parse_known_args()
-  tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+    tf.app.run()
